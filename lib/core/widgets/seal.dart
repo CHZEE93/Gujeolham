@@ -67,6 +67,37 @@ class Seal extends StatelessWidget {
   }
 }
 
+/// 마음에 새긴 구절 표시. 새기면 0.4초 동안 꾹 찍히고(scale+fade), 거두면 사라진다.
+class CherishStamp extends StatelessWidget {
+  const CherishStamp({super.key, required this.cherished, this.size = 30});
+
+  final bool cherished;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      switchInCurve: Curves.easeOutBack,
+      transitionBuilder: (child, a) => FadeTransition(
+        opacity: a,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 1.8, end: 1).animate(a),
+          child: child,
+        ),
+      ),
+      child: cherished
+          ? Seal(
+              key: const ValueKey(true),
+              text: S.sealCherished,
+              size: size,
+              angle: 5 * math.pi / 180,
+            )
+          : SizedBox(key: const ValueKey(false), width: size),
+    );
+  }
+}
+
 /// 저장 완료 연출: 함이가 뚜껑을 톡 열며 웃고, 낙관이 0.4초 동안 찍힌다(scale+fade).
 class SaveCelebration extends StatefulWidget {
   const SaveCelebration({super.key, required this.onDone});

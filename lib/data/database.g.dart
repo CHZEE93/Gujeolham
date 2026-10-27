@@ -110,6 +110,17 @@ class $QuotesTable extends Quotes with TableInfo<$QuotesTable, Quote> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _cherishedAtMeta = const VerificationMeta(
+    'cherishedAt',
+  );
+  @override
+  late final GeneratedColumn<String> cherishedAt = GeneratedColumn<String>(
+    'cherished_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -122,6 +133,7 @@ class $QuotesTable extends Quotes with TableInfo<$QuotesTable, Quote> {
     createdAt,
     updatedAt,
     deletedAt,
+    cherishedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -200,6 +212,15 @@ class $QuotesTable extends Quotes with TableInfo<$QuotesTable, Quote> {
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('cherished_at')) {
+      context.handle(
+        _cherishedAtMeta,
+        cherishedAt.isAcceptableOrUnknown(
+          data['cherished_at']!,
+          _cherishedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -249,6 +270,10 @@ class $QuotesTable extends Quotes with TableInfo<$QuotesTable, Quote> {
         DriftSqlType.string,
         data['${effectivePrefix}deleted_at'],
       ),
+      cherishedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cherished_at'],
+      ),
     );
   }
 
@@ -273,6 +298,9 @@ class Quote extends DataClass implements Insertable<Quote> {
 
   /// 소프트 삭제 시각. 값이 있으면 목록·검색에서 제외된다.
   final String? deletedAt;
+
+  /// 마음에 새긴 시각('좋아요'). 값이 있으면 새긴 구절이다.
+  final String? cherishedAt;
   const Quote({
     required this.id,
     required this.content,
@@ -284,6 +312,7 @@ class Quote extends DataClass implements Insertable<Quote> {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.cherishedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -310,6 +339,9 @@ class Quote extends DataClass implements Insertable<Quote> {
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<String>(deletedAt);
     }
+    if (!nullToAbsent || cherishedAt != null) {
+      map['cherished_at'] = Variable<String>(cherishedAt);
+    }
     return map;
   }
 
@@ -333,6 +365,9 @@ class Quote extends DataClass implements Insertable<Quote> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      cherishedAt: cherishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cherishedAt),
     );
   }
 
@@ -352,6 +387,7 @@ class Quote extends DataClass implements Insertable<Quote> {
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
       deletedAt: serializer.fromJson<String?>(json['deletedAt']),
+      cherishedAt: serializer.fromJson<String?>(json['cherishedAt']),
     );
   }
   @override
@@ -368,6 +404,7 @@ class Quote extends DataClass implements Insertable<Quote> {
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
       'deletedAt': serializer.toJson<String?>(deletedAt),
+      'cherishedAt': serializer.toJson<String?>(cherishedAt),
     };
   }
 
@@ -382,6 +419,7 @@ class Quote extends DataClass implements Insertable<Quote> {
     String? createdAt,
     String? updatedAt,
     Value<String?> deletedAt = const Value.absent(),
+    Value<String?> cherishedAt = const Value.absent(),
   }) => Quote(
     id: id ?? this.id,
     content: content ?? this.content,
@@ -393,6 +431,7 @@ class Quote extends DataClass implements Insertable<Quote> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    cherishedAt: cherishedAt.present ? cherishedAt.value : this.cherishedAt,
   );
   Quote copyWithCompanion(QuotesCompanion data) {
     return Quote(
@@ -406,6 +445,9 @@ class Quote extends DataClass implements Insertable<Quote> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      cherishedAt: data.cherishedAt.present
+          ? data.cherishedAt.value
+          : this.cherishedAt,
     );
   }
 
@@ -421,7 +463,8 @@ class Quote extends DataClass implements Insertable<Quote> {
           ..write('imagePath: $imagePath, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('cherishedAt: $cherishedAt')
           ..write(')'))
         .toString();
   }
@@ -438,6 +481,7 @@ class Quote extends DataClass implements Insertable<Quote> {
     createdAt,
     updatedAt,
     deletedAt,
+    cherishedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -452,7 +496,8 @@ class Quote extends DataClass implements Insertable<Quote> {
           other.imagePath == this.imagePath &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.deletedAt == this.deletedAt &&
+          other.cherishedAt == this.cherishedAt);
 }
 
 class QuotesCompanion extends UpdateCompanion<Quote> {
@@ -466,6 +511,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
   final Value<String> createdAt;
   final Value<String> updatedAt;
   final Value<String?> deletedAt;
+  final Value<String?> cherishedAt;
   final Value<int> rowid;
   const QuotesCompanion({
     this.id = const Value.absent(),
@@ -478,6 +524,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.cherishedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   QuotesCompanion.insert({
@@ -491,6 +538,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
     required String createdAt,
     required String updatedAt,
     this.deletedAt = const Value.absent(),
+    this.cherishedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        content = Value(content),
@@ -507,6 +555,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
     Expression<String>? deletedAt,
+    Expression<String>? cherishedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -520,6 +569,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (cherishedAt != null) 'cherished_at': cherishedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -535,6 +585,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
     Value<String>? createdAt,
     Value<String>? updatedAt,
     Value<String?>? deletedAt,
+    Value<String?>? cherishedAt,
     Value<int>? rowid,
   }) {
     return QuotesCompanion(
@@ -548,6 +599,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      cherishedAt: cherishedAt ?? this.cherishedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -585,6 +637,9 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<String>(deletedAt.value);
     }
+    if (cherishedAt.present) {
+      map['cherished_at'] = Variable<String>(cherishedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -604,6 +659,7 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('cherishedAt: $cherishedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -633,6 +689,7 @@ typedef $$QuotesTableCreateCompanionBuilder = QuotesCompanion Function({
   required String createdAt,
   required String updatedAt,
   Value<String?> deletedAt,
+  Value<String?> cherishedAt,
   Value<int> rowid,
 });
 typedef $$QuotesTableUpdateCompanionBuilder = QuotesCompanion Function({
@@ -646,6 +703,7 @@ typedef $$QuotesTableUpdateCompanionBuilder = QuotesCompanion Function({
   Value<String> createdAt,
   Value<String> updatedAt,
   Value<String?> deletedAt,
+  Value<String?> cherishedAt,
   Value<int> rowid,
 });
 
@@ -705,6 +763,11 @@ class $$QuotesTableFilterComposer
 
   ColumnFilters<String> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cherishedAt => $composableBuilder(
+    column: $table.cherishedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -767,6 +830,11 @@ class $$QuotesTableOrderingComposer
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get cherishedAt => $composableBuilder(
+    column: $table.cherishedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$QuotesTableAnnotationComposer
@@ -807,6 +875,11 @@ class $$QuotesTableAnnotationComposer
 
   GeneratedColumn<String> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cherishedAt => $composableBuilder(
+    column: $table.cherishedAt,
+    builder: (column) => column,
+  );
 }
 
 class $$QuotesTableTableManager
@@ -847,6 +920,7 @@ class $$QuotesTableTableManager
                 Value<String> createdAt = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
                 Value<String?> deletedAt = const Value.absent(),
+                Value<String?> cherishedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => QuotesCompanion(
                 id: id,
@@ -859,6 +933,7 @@ class $$QuotesTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                cherishedAt: cherishedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -873,6 +948,7 @@ class $$QuotesTableTableManager
                 required String createdAt,
                 required String updatedAt,
                 Value<String?> deletedAt = const Value.absent(),
+                Value<String?> cherishedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => QuotesCompanion.insert(
                 id: id,
@@ -885,6 +961,7 @@ class $$QuotesTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                cherishedAt: cherishedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

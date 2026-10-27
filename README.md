@@ -28,10 +28,16 @@ lib/
   core/       테마(theme.dart), 문자열(strings.dart), 라우팅(router.dart),
               문장 분리(sentence_splitter.dart), 공용 위젯(함·낙관)
   data/       drift 스키마·DAO, 저장소(repository), 이미지 보관, Riverpod 프로바이더
-  features/   home · capture · select · save · detail · settings
+  features/   home · capture(촬영·부분 지정) · select · save · detail · share · settings
   sync/       Google 로그인, Drive appData 동기화(drive_sync_service.dart), 병합 규칙
-test/         문장 분리 · DAO · 동기화 병합 단위 테스트
+test/         문장 분리 · 부분 지정 · DAO · 마이그레이션 · 동기화 병합 단위 테스트
 ```
+
+## 주요 기능
+
+- **부분 지정**: 사진을 읽은 뒤 손가락으로 네모를 그리면, 그 안에 중심이 들어오는 단어만 모아 문장으로 나눕니다(`lib/core/ocr_region.dart`). "전체 문장"을 누르면 사진 전체를 씁니다.
+- **마음에 새기기**: '좋아요'에 해당합니다. 상세 화면에서 새기면 구절에 '새김' 낙관이 찍히고, 홈에서 "새긴 구절"만 골라 볼 수 있습니다. `cherished_at` 열(스키마 2)에 시각을 저장하고 동기화에도 포함합니다.
+- **보내기(공유)**: 상세 화면의 "보내기" → 구절 카드를 PNG로 만들어 보내거나 글로 보냅니다. OS 공유 창(share_plus)을 쓰므로 서버가 필요 없습니다.
 
 ## Google Cloud OAuth 클라이언트 설정
 
@@ -132,6 +138,7 @@ Android에서는 image_picker가 시스템 카메라 앱과 사진 선택기를 
 - 실패하거나 연동되지 않았으면 조용히 건너뛰고, 마지막 오류를 설정 화면에 보여 줍니다.
 - 동시에 한 번만 실행되며, 실행 중 요청이 오면 끝난 뒤 한 번 더 실행합니다.
 - 원격 파일의 `version`이 이 앱이 아는 것(1)보다 크면 덮어쓰지 않고 오류로 남깁니다.
+- `cherished_at`은 형식 1에 선택 필드로 더했습니다. 이 필드가 없는 옛 파일은 "새기지 않음"으로 읽습니다.
 
 ## 참고
 

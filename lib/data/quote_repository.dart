@@ -73,6 +73,11 @@ class QuoteRepository {
     onChanged?.call();
   }
 
+  Future<void> setCherished(String id, bool cherished) async {
+    await _dao.setCherished(id, cherished);
+    onChanged?.call();
+  }
+
   Future<void> delete(String id) async {
     await _dao.softDelete(id);
     onChanged?.call();

@@ -15,6 +15,7 @@ import '../../core/widgets/seal.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../save/quote_form.dart';
+import '../share/share_sheet.dart';
 
 class DetailScreen extends ConsumerStatefulWidget {
   const DetailScreen({super.key, required this.id});
@@ -155,13 +156,14 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
   }
 }
 
-class _QuoteView extends StatelessWidget {
+class _QuoteView extends ConsumerWidget {
   const _QuoteView({required this.quote});
 
   final Quote quote;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cherished = quote.cherishedAt != null;
     final fmt = DateFormat(S.dateFormat, S.locale);
     String date(String iso) => fmt.format(DateTime.parse(iso).toLocal());
 
@@ -192,9 +194,42 @@ class _QuoteView extends StatelessWidget {
                 angle: -6 * math.pi / 180,
               ),
             ),
+            Positioned(
+              left: 18,
+              top: -26,
+              child: CherishStamp(cherished: cherished, size: 34),
+            ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 26),
+        Row(
+          children: [
+            Expanded(
+              child: PillButton(
+                label: cherished ? S.cherished : S.cherish,
+                icon: cherished
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                tone: cherished ? PillTone.primary : PillTone.light,
+                height: 46,
+                onPressed: () => ref
+                    .read(quoteRepositoryProvider)
+                    .setCherished(quote.id, !cherished),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: PillButton(
+                label: S.share,
+                icon: Icons.ios_share_rounded,
+                tone: PillTone.light,
+                height: 46,
+                onPressed: () => showShareSheet(context, quote),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
         if (quote.bookTitle != null)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

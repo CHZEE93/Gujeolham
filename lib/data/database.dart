@@ -23,6 +23,9 @@ class Quotes extends Table {
   /// 소프트 삭제 시각. 값이 있으면 목록·검색에서 제외된다.
   TextColumn get deletedAt => text().nullable()();
 
+  /// 마음에 새긴 시각('좋아요'). 값이 있으면 새긴 구절이다.
+  TextColumn get cherishedAt => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -33,5 +36,12 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'gujeolham'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) await m.addColumn(quotes, quotes.cherishedAt);
+    },
+  );
 }

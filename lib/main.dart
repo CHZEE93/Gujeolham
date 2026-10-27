@@ -8,6 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/router.dart';
 import 'core/strings.dart';
 import 'core/theme.dart';
+import 'data/app_settings.dart';
 import 'data/providers.dart';
 import 'sync/sync_controller.dart';
 
@@ -23,8 +24,10 @@ Future<void> main() async {
     }
   });
 
+  final palette = await AppSettingsStore().loadPalette();
   final container = ProviderContainer(
     overrides: [
+      initialPaletteProvider.overrideWithValue(palette),
       // 저장·수정·삭제 직후 동기화(미연동이면 아무것도 하지 않음).
       quoteChangedHookProvider.overrideWith(
         (ref) => () => ref.read(syncControllerProvider.notifier).syncSilently(),
@@ -50,7 +53,7 @@ class GujeolhamApp extends ConsumerWidget {
     return MaterialApp.router(
       title: S.appName,
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: buildAppTheme(ref.watch(paletteProvider)),
       routerConfig: ref.watch(routerProvider),
     );
   }

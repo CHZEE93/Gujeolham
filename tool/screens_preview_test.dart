@@ -12,9 +12,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gujeolham/core/ocr_region.dart';
 import 'package:gujeolham/core/router.dart';
 import 'package:gujeolham/core/theme.dart';
 import 'package:gujeolham/core/widgets/seal.dart';
+import 'package:gujeolham/data/app_settings.dart';
 import 'package:gujeolham/data/database.dart';
 import 'package:gujeolham/data/providers.dart';
 import 'package:gujeolham/features/capture/capture_session.dart';
@@ -44,7 +46,7 @@ Future<void> _loadFonts() async {
   );
 }
 
-Future<AppDatabase> _seed({bool empty = false}) async {
+Future<AppDatabase> _seed({bool empty = false, bool cherished = false}) async {
   final db = AppDatabase(NativeDatabase.memory());
   // 실제 비동기 구간에서 DB를 열어 둔다(가짜 시간 안에서 열면 멈춘다).
   await db.customSelect('SELECT 1').get();
@@ -60,6 +62,7 @@ Future<AppDatabase> _seed({bool empty = false}) async {
         author: Value(q.$3),
         page: Value(q.$4),
         memo: Value(i == 0 ? '다시 읽고 싶은 대목. 밑줄 그어 둘 것.' : null),
+        cherishedAt: Value(cherished && i.isEven ? iso : null),
         createdAt: iso,
         updatedAt: iso,
       ),
@@ -80,6 +83,8 @@ void main() {
     String name,
     String location, {
     bool empty = false,
+    bool cherished = false,
+    AppPalette palette = AppPalette.hanji,
     void Function(ProviderContainer c)? prepare,
     Future<void> Function(WidgetTester t)? act,
     Duration settle = const Duration(milliseconds: 300),
@@ -91,10 +96,13 @@ void main() {
     late AppDatabase db;
     await tester.runAsync(() async {
       await _loadFonts();
-      db = await _seed(empty: empty);
+      db = await _seed(empty: empty, cherished: cherished);
     });
     final container = ProviderContainer(
-      overrides: [databaseProvider.overrideWithValue(db)],
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        initialPaletteProvider.overrideWithValue(palette),
+      ],
     );
     addTearDown(container.dispose);
     prepare?.call(container);
@@ -107,7 +115,7 @@ void main() {
           key: key,
           child: MaterialApp.router(
             debugShowCheckedModeBanner: false,
-            theme: buildAppTheme(),
+            theme: buildAppTheme(palette),
             routerConfig: buildRouter(initialLocation: location),
           ),
         ),
@@ -135,15 +143,43 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   }
 
+  const pageLines = [
+    '그는 오래도록 창밖을 바라보았다.',
+    '무엇을 아끼는지가 곧 그 사람이다.',
+    '소유는 사물을 붙드는 일이고 존재는 삶을 살아내는 일이다.',
+    '우리는 대개 그 둘을 헷갈린 채 산다.',
+    '그날 밤, 나는 책장을 덮지 못했다.',
+  ];
+
+  // 가짜 책 쪽(900x1200): 단어마다 회색 막대를 그리고 같은 위치를 OCR 결과로 쓴다.
+  final pageWords = <OcrLine>[
+    for (final (i, line) in pageLines.indexed)
+      OcrLine([
+        for (final (j, w) in line.split(' ').indexed)
+          OcrWord(w, Rect.fromLTWH(90.0 + j * 150, 160.0 + i * 160, 130, 56)),
+      ]),
+  ];
+
+  Future<String> pageImage() async {
+    final path = '$_out/_page.png';
+    final rec = ui.PictureRecorder();
+    final canvas = Canvas(rec)
+      ..drawRect(const Rect.fromLTWH(0, 0, 900, 1200), Paint()..color = const Color(0xFFF3ECDD));
+    for (final w in pageWords.expand((l) => l.words)) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(w.box.deflate(10), const Radius.circular(6)),
+        Paint()..color = const Color(0xFF8A7A68),
+      );
+    }
+    final img = await rec.endRecording().toImage(900, 1200);
+    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+    await File(path).writeAsBytes(bytes!.buffer.asUint8List());
+    return path;
+  }
+
   void selectSession(ProviderContainer c) {
     c.read(captureSessionProvider.notifier)
-      ..start('none.jpg', [
-        '그는 오래도록 창밖을 바라보았다.',
-        '무엇을 아끼는지가 곧 그 사람이다.',
-        '소유는 사물을 붙드는 일이고 존재는 삶을 살아내는 일이다.',
-        '우리는 대개 그 둘을 헷갈린 채 산다.',
-        '그날 밤, 나는 책장을 덮지 못했다.',
-      ])
+      ..start('none.jpg', [for (final l in pageLines) OcrLine([OcrWord(l, Rect.zero)])])
       ..toggle(1)
       ..toggle(2);
   }
@@ -156,6 +192,45 @@ void main() {
   testWidgets('save', (t) => shoot(t, '06_save', Routes.save, prepare: selectSession));
   testWidgets('detail', (t) => shoot(t, '07_detail', Routes.detail('q0')));
   testWidgets('settings', (t) => shoot(t, '08_settings', Routes.settings));
+  testWidgets('region', (t) async {
+    late String path;
+    await t.runAsync(() async => path = await pageImage());
+    await shoot(
+      t,
+      '10_region',
+      Routes.region,
+      prepare: (c) => c.read(captureSessionProvider.notifier).start(path, pageWords),
+      act: (t) async {
+        // 이미지 로딩을 기다린 뒤 2~3번째 줄을 감싸도록 끈다.
+        for (var i = 0; i < 4; i++) {
+          await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+          await t.pump();
+        }
+        final box = t.getRect(find.byType(CustomPaint).last);
+        final s = box.width / 900;
+        final start = box.topLeft + Offset(70 * s, 300 * s);
+        await t.dragFrom(start, Offset(760 * s, 300 * s));
+        await t.pump();
+      },
+    );
+  });
+  for (final p in AppPalette.values.skip(1)) {
+    testWidgets('theme_${p.name}', (t) => shoot(t, '20_theme_${p.name}', Routes.home, palette: p, cherished: true));
+  }
+  testWidgets('settings_theme', (t) => shoot(t, '21_settings_pink', Routes.settings, palette: AppPalette.pink));
+  testWidgets('sentence_edit', (t) => shoot(t, '14_sentence_edit', Routes.select,
+      prepare: selectSession,
+      act: (t) async {
+        await t.tap(find.byIcon(Icons.edit_rounded).at(1));
+        await t.pump(const Duration(milliseconds: 600));
+      }));
+  testWidgets('home_cherished', (t) => shoot(t, '11_home_cherished', Routes.home, cherished: true));
+  testWidgets('detail_cherished', (t) => shoot(t, '12_detail_cherished', Routes.detail('q0'), cherished: true));
+  testWidgets('share', (t) => shoot(t, '13_share', Routes.detail('q0'),
+      act: (t) async {
+        await t.tap(find.text('보내기'));
+        await t.pump(const Duration(milliseconds: 600));
+      }));
 
   // 저장 완료 연출: 함이가 웃고 낙관이 찍힌 직후
   testWidgets('celebration', (t) async {

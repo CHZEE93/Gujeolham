@@ -60,6 +60,30 @@ void main() {
     expect((await db.quotesDao.allIncludingDeleted()).length, 1);
   });
 
+  test('마음에 새기면 새긴 구절 목록에 보이고, 거두면 빠진다', () async {
+    final a = await repo.create(const QuoteInput(content: '새길 구절'));
+    await repo.create(const QuoteInput(content: '그냥 구절'));
+    final before = (await db.quotesDao.findById(a))!;
+    changes = 0;
+    await Future<void>.delayed(const Duration(milliseconds: 2));
+
+    await repo.setCherished(a, true);
+    final cherished = (await db.quotesDao.findById(a))!;
+    expect(cherished.cherishedAt, isNotNull);
+    expect(isNewer(cherished.updatedAt, before.updatedAt), isTrue);
+    expect(changes, 1);
+    expect(
+      (await db.quotesDao.watchQuotes(cherishedOnly: true).first).map((q) => q.id),
+      [a],
+    );
+    expect(await db.quotesDao.watchQuotes(query: '그냥', cherishedOnly: true).first, isEmpty);
+
+    await repo.setCherished(a, false);
+    expect((await db.quotesDao.findById(a))!.cherishedAt, isNull);
+    expect(await db.quotesDao.watchQuotes(cherishedOnly: true).first, isEmpty);
+    expect((await visible()).length, 2);
+  });
+
   test('최근 책 제목은 중복 없이 최근순, 저자 포함', () async {
     await repo.create(const QuoteInput(content: 'a', bookTitle: '책1', author: '갑'));
     await Future<void>.delayed(const Duration(milliseconds: 2));

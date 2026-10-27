@@ -42,9 +42,24 @@ final searchQueryProvider = NotifierProvider<SearchQuery, String>(
   SearchQuery.new,
 );
 
+/// 홈에서 새긴 구절만 볼지.
+class CherishedFilter extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
+final cherishedFilterProvider = NotifierProvider<CherishedFilter, bool>(
+  CherishedFilter.new,
+);
+
 final quotesProvider = StreamProvider<List<Quote>>((ref) {
   final query = ref.watch(searchQueryProvider);
-  return ref.watch(quotesDaoProvider).watchQuotes(query: query);
+  final cherishedOnly = ref.watch(cherishedFilterProvider);
+  return ref
+      .watch(quotesDaoProvider)
+      .watchQuotes(query: query, cherishedOnly: cherishedOnly);
 });
 
 final quoteProvider = StreamProvider.family<Quote?, String>(

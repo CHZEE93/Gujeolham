@@ -16,6 +16,7 @@ Map<String, Object?> quoteToJson(Quote q) => {
   'created_at': q.createdAt,
   'updated_at': q.updatedAt,
   'deleted_at': q.deletedAt,
+  'cherished_at': q.cherishedAt,
 };
 
 /// JSON → DB 반영용 Companion(image_path 없음). 형식이 틀리면 null.
@@ -42,6 +43,7 @@ QuotesCompanion? quoteFromJson(Map<String, Object?> j) {
     createdAt: Value(createdAt),
     updatedAt: Value(updatedAt),
     deletedAt: Value(j['deleted_at'] as String?),
+    cherishedAt: Value(j['cherished_at'] as String?),
   );
 }
 

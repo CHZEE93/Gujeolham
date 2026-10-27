@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gujeolham/data/database.dart';
 import 'package:gujeolham/sync/sync_merge.dart';
@@ -36,6 +37,15 @@ void main() {
     // JSON 왕복
     final parsed = parseExport(jsonDecode(jsonEncode(export)));
     expect(parsed.single.id.value, 'a');
+  });
+
+  test('cherished_at은 왕복되고, 없는 옛 파일은 새기지 않은 것으로 읽는다', () {
+    final q = _local('a', '2026-01-02T00:00:00Z').copyWith(
+      cherishedAt: const Value('2026-01-02T00:00:00Z'),
+    );
+    final parsed = parseExport(jsonDecode(jsonEncode(buildExport([q]))));
+    expect(parsed.single.cherishedAt.value, '2026-01-02T00:00:00Z');
+    expect(quoteFromJson(_remote('b', '2026-01-02T00:00:00Z'))!.cherishedAt.value, isNull);
   });
 
   test('잘못된 항목은 건너뛴다', () {

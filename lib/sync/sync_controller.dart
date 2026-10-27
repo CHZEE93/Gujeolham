@@ -94,6 +94,7 @@ class SyncController extends Notifier<SyncStatus> {
   /// 로그인하고 최초 동기화(원격이 없으면 로컬 전체 업로드)를 수행한다.
   /// 실패 시 사용자에게 보여줄 메시지를 돌려준다.
   Future<String?> link() async {
+    if (!GoogleAuth.isConfigured) return S.googleNotConfigured;
     try {
       final account = await _auth.signIn();
       state = state.copyWith(
@@ -131,6 +132,7 @@ class SyncController extends Notifier<SyncStatus> {
     if (!state.linked) return false;
     state = state.copyWith(syncing: true);
     try {
+      if (!GoogleAuth.isConfigured) throw const _NotConfigured();
       if (_auth.account == null) {
         await _auth.restore();
         if (_auth.account == null && interactive) await _auth.signIn();
@@ -167,6 +169,7 @@ class SyncController extends Notifier<SyncStatus> {
       S.signInCanceled,
     GoogleSignInException(:final description) =>
       '${S.signInFailed}${description == null ? '' : ' ($description)'}',
+    _NotConfigured() => S.googleNotConfigured,
     _NotSignedIn() => S.syncNotLinked,
     _NotAuthorized() => S.authorizationDenied,
     drive.DetailedApiRequestError(:final status, :final message) =>
@@ -177,6 +180,10 @@ class SyncController extends Notifier<SyncStatus> {
     FormatException() => S.remoteFormatError,
     _ => '${S.unknownError} ($e)',
   };
+}
+
+class _NotConfigured implements Exception {
+  const _NotConfigured();
 }
 
 class _NotSignedIn implements Exception {

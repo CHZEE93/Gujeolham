@@ -237,3 +237,53 @@ README.md  WORKLOG.md  google_oauth.example.json
 - `flutter test`: 25개 모두 통과
 - `flutter build apk --debug`: 성공
 - 미리보기 PNG 9장을 렌더링해 눈으로 확인함. 실기기에서는 아직 확인하지 않음
+
+## 10. 기능 추가 — 부분 지정 · 마음에 새기기 · 보내기 (2026-10-27)
+
+### 부분 지정(사진에서 원하는 부분만 추출)
+- 흐름: 촬영 → OCR → **부분 지정**(`/capture/region`, 새 화면) → 문장 고르기 → 담기
+- `OcrService.recognize`가 문장 대신 줄·단어(`OcrLine`/`OcrWord`)와 위치를 돌려줌. ML Kit `TextElement` 단위
+- `lib/core/ocr_region.dart`: 영역 안 단어만 골라 문장으로 나누는 순수 함수. 단어 상자의 **중심**이 영역 안에 있으면 포함하므로 줄 중간을 잘라도 됨
+- 화면: 사진 위를 손가락으로 끌어 네모를 그림. 읽은 단어 자리를 옅은 치자색으로, 네모 안 단어는 진하게 칠하고, 네모 밖은 어둡게 함. "전체 문장"은 지정 없이 진행
+- 좌표: Flutter가 디코딩한 이미지 크기(EXIF 회전 반영)를 기준으로 함. ML Kit도 회전을 반영한 좌표를 준다는 전제. **실기기에서 세로·가로 사진 모두 확인 필요**
+
+### 마음에 새기기('좋아요')
+- 이름: 마음에 **새기다** + 낙관을 **새기다**. 표시는 '새김' 낙관
+- 스키마 2: `quotes.cherished_at`(TEXT, nullable) 추가, `onUpgrade`에서 `addColumn`
+- 상세: "마음에 새기기" 토글(새기면 다홍 버튼 + 카드 왼쪽 위에 '새김' 낙관이 0.4초 동안 찍힘). 홈: 새긴 카드는 '담' 대신 '새김' 낙관, "모든 구절 / 새긴 구절" 칩으로 거르기
+- 새기기·거두기도 `updated_at`을 갱신하므로 Drive에 동기화됨. 동기화 형식 version은 1 그대로이고 `cherished_at`은 선택 필드로 추가함
+- 주의: 이 기능이 없는 옛 앱이 다른 기기에서 더 늦게 고쳐 올리면, 그 구절의 새김이 지워질 수 있음
+
+### 보내기(공유)
+- 패키지 추가: `share_plus ^13.3.1`
+- 상세의 "보내기" → 아래에서 올라오는 창에 구절 카드(한지 바탕, 구름 코너, '구절함' 낙관, 4:5) 미리보기
+  - "카드로 보내기": 카드를 3배 해상도 PNG로 만들어 임시 폴더에 저장한 뒤 OS 공유 창으로 보냄(글도 함께)
+  - "글로 보내기": `구절 / — 책 · 저자 · 쪽 / #구절함`
+- 서버를 두지 않는다는 원칙에 맞춰 OS 공유 창을 씀. 링크로 열어 보는 공개 페이지나 다른 사람의 구절 피드는 서버가 있어야 해서 하지 않음
+
+### 테스트·검증
+- 새 테스트: `test/ocr_region_test.dart`(4), `test/migration_test.dart`(1, 스키마 1→2), DAO 새기기(1), 동기화 `cherished_at` 왕복(1) → 모두 32개 통과
+- `flutter analyze`: 오류 0건
+- 미리보기 추가: `10_region`, `11_home_cherished`, `12_detail_cherished`, `13_share`
+- 실기기 확인은 아직 하지 않음: 부분 지정 좌표 정확도, 공유 창(특히 iPad의 sharePositionOrigin)
+
+## 11. 문장 고치기 · 색 테마 · 입력 안내 (2026-10-27)
+
+- **문장 고치기**: 문장 고르기 화면에서 문장마다 연필 버튼 → 아래 창에서 잘못 읽힌 글자를 고침. 모두 지우면 그 문장을 목록에서 빼고, 뒤 문장의 선택 번호를 당김(`CaptureSessionNotifier.editSentence`). 담기 화면에도 "담기 전에 한 번 더 고칠 수 있어요" 안내를 넣음
+- **색 테마**: 설정 맨 위 "색 테마"에서 한지(기본) · 벚꽃 · 연두 · 하늘 · 라일락 · 유자 중에서 고름
+  - `theme.dart`의 `_Palette` 상수를 `AppPalette` enum으로 바꿈. `buildAppTheme(palette)`. 위젯은 모두 `context.hanji`를 쓰므로 화면 코드는 바꾸지 않음
+  - 고른 값은 앱 지원 폴더의 `app_settings.json`에 저장함(기기 전용, 동기화하지 않음). 앱을 시작하기 전에 읽어 첫 화면부터 그 색으로 보임
+  - 앱 아이콘과 실행 직후 배경(launch screen)은 한지색 그대로 둠
+- **입력 안내**: 책 제목·저자·쪽수는 원래 필수가 아니었음. 라벨에 "(선택)"을 붙여 분명하게 함
+- 테스트 `test/capture_session_test.dart`(2) 추가 → 34개 통과. 미리보기 `14_sentence_edit`, `20_theme_*`, `21_settings_pink`
+
+## 12. Google 연동 점검 · 다음 단계 (2026-10-27)
+
+- **원인**: 저장소에 `google_oauth.json`이 없어 클라이언트 ID가 빈 값으로 빌드됨. Android는 `serverClientId`가 없으면 로그인 창도 띄우지 않고 실패함(`serverClientId must be provided on Android`). Drive 동기화 코드 자체에서는 문제를 찾지 못함
+- **수정**: 설정이 빠진 빌드에서 연동을 켜거나 동기화하면 한국어로 이유를 알려 줌(`GoogleAuth.isConfigured`, `S.googleNotConfigured`)
+- 이 PC의 디버그 키 SHA-1: `72:0C:AD:FC:99:32:FF:EC:18:8F:28:55:19:A0:F3:DA:D0:2B:79:82`
+- 등록 없이도 Android 자동 백업은 켜져 있음(매니페스트에서 `allowBackup`을 끄지 않음). 실기기에서 확인하지는 않음
+
+### 다음 단계
+1. **Google Cloud 등록 안내**: Drive API 사용 설정, 동의 화면(drive.appdata, 테스트 사용자), 웹·Android 클라이언트 → `google_oauth.json` 만들기 → `--dart-define-from-file`로 빌드하고 실기기에서 연동·동기화 확인
+2. **백업 파일 내보내기/가져오기**: 설정에서 `quotes.json`(동기화 형식과 같음)을 공유 창으로 내보내고, 파일을 골라 가져와 병합. Google 등록 없이 쓰는 백업 수단

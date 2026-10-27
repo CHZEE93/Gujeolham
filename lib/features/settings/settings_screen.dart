@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/hanji_page.dart';
 import '../../core/widgets/puffy.dart';
+import '../../data/app_settings.dart';
 import '../../sync/sync_controller.dart';
 
 final _packageInfoProvider = FutureProvider<PackageInfo>(
@@ -73,6 +74,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         children: [
+          _SectionTitle(S.themeSection),
+          const _PalettePicker(),
+          const SizedBox(height: 28),
           _SectionTitle(S.googleSection),
           PuffyCard(
             padding: EdgeInsets.zero,
@@ -144,6 +148,113 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 색 테마 고르기. 한 줄에 셋씩, 테마마다 바탕 위에 주요·보조 색 점을 보여 준다.
+class _PalettePicker extends ConsumerWidget {
+  const _PalettePicker();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(paletteProvider);
+    return LayoutBuilder(
+      builder: (context, box) {
+        const gap = 10.0;
+        final width = (box.maxWidth - gap * 2) / 3;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final p in AppPalette.values)
+              SizedBox(
+                width: width,
+                child: _PaletteTile(
+                  palette: p,
+                  selected: p == current,
+                  onTap: () => ref.read(paletteProvider.notifier).select(p),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PaletteTile extends StatelessWidget {
+  const _PaletteTile({
+    required this.palette,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppPalette palette;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = palette.colors;
+    final c = context.hanji;
+    Widget dot(Color color, double size) => Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: palette.label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
+          decoration: BoxDecoration(
+            color: p.hanji,
+            borderRadius: BorderRadius.circular(kCardRadius - 4),
+            border: Border.all(
+              color: selected ? c.galmuk : p.line,
+              width: selected ? 2 : 1,
+            ),
+            boxShadow: [BoxShadow(color: p.cardDrop, offset: const Offset(0, kDrop))],
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  dot(p.dahong, 22),
+                  const SizedBox(width: 4),
+                  dot(p.ok, 14),
+                  const SizedBox(width: 3),
+                  dot(p.chija, 14),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (selected) ...[
+                    Icon(Icons.check_rounded, size: 15, color: p.galmuk),
+                    const SizedBox(width: 2),
+                  ],
+                  Text(
+                    palette.label,
+                    style: juaStyle(
+                      context.text.titleSmall?.copyWith(color: p.galmuk),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

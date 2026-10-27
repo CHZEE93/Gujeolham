@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -13,6 +15,12 @@ const _iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
 const kDriveScopes = [drive.DriveApi.driveAppdataScope];
 
 class GoogleAuth {
+  /// 이 빌드에 OAuth 클라이언트 ID가 들어 있는지.
+  /// `--dart-define-from-file=google_oauth.json` 없이 빌드하면 false다.
+  /// (Android는 웹 클라이언트 ID가 없으면 로그인 창을 띄우기 전에 실패한다.)
+  static bool get isConfigured =>
+      Platform.isIOS ? _iosClientId.isNotEmpty : _serverClientId.isNotEmpty;
+
   GoogleSignIn get _gsi => GoogleSignIn.instance;
   Future<void>? _init;
   GoogleSignInAccount? _account;

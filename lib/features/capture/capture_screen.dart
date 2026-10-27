@@ -36,16 +36,14 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
 
     setState(() => _busy = true);
     try {
-      final sentences = await ref
-          .read(ocrServiceProvider)
-          .recognizeSentences(file.path);
+      final lines = await ref.read(ocrServiceProvider).recognize(file.path);
       if (!mounted) return;
-      if (sentences.isEmpty) {
+      if (lines.isEmpty) {
         messenger.showSnackBar(const SnackBar(content: Text(S.ocrEmpty)));
         return;
       }
-      ref.read(captureSessionProvider.notifier).start(file.path, sentences);
-      context.push(Routes.select);
+      ref.read(captureSessionProvider.notifier).start(file.path, lines);
+      context.push(Routes.region);
     } catch (_) {
       messenger.showSnackBar(const SnackBar(content: Text(S.ocrFailed)));
     } finally {

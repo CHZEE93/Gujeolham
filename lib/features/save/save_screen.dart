@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router.dart';
 import '../../core/strings.dart';
+import '../../core/theme.dart';
 import '../../core/widgets/hanji_page.dart';
 import '../../core/widgets/puffy.dart';
 import '../../core/widgets/seal.dart';
@@ -77,7 +78,17 @@ class _SaveScreenState extends ConsumerState<SaveScreen> {
             key: _formKey,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              children: [QuoteFormFields(controllers: _c)],
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    S.saveEditGuide,
+                    textAlign: TextAlign.center,
+                    style: context.text.bodySmall,
+                  ),
+                ),
+                QuoteFormFields(controllers: _c),
+              ],
             ),
           ),
         ),

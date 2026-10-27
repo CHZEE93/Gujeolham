@@ -44,6 +44,17 @@ class SelectScreen extends ConsumerWidget {
                 order: session.selected.indexOf(i),
                 onTap: () =>
                     ref.read(captureSessionProvider.notifier).toggle(i),
+                onEdit: () async {
+                  final fixed = await showSentenceEditor(
+                    context,
+                    session.sentences[i],
+                  );
+                  if (fixed != null) {
+                    ref
+                        .read(captureSessionProvider.notifier)
+                        .editSentence(i, fixed);
+                  }
+                },
               ),
             ),
           ),
@@ -58,9 +69,11 @@ class _SentenceTile extends StatelessWidget {
     required this.text,
     required this.order,
     required this.onTap,
+    required this.onEdit,
   });
 
   final String text;
+  final VoidCallback onEdit;
 
   /// 선택 순서(0부터). 선택되지 않았으면 -1.
   final int order;
@@ -110,7 +123,112 @@ class _SentenceTile extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(child: Text(text, style: context.text.bodyLarge)),
+            Semantics(
+              button: true,
+              label: S.sentenceEdit,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onEdit,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 2, 0, 8),
+                  child: Icon(Icons.edit_rounded, size: 19, color: c.yeongal),
+                ),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 문장 하나를 고치는 창. 고친 글을 돌려주고, 취소하면 null.
+Future<String?> showSentenceEditor(BuildContext context, String initial) {
+  return showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: context.hanji.hanji,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(kCardRadius)),
+    ),
+    builder: (context) => _SentenceEditor(initial: initial),
+  );
+}
+
+class _SentenceEditor extends StatefulWidget {
+  const _SentenceEditor({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_SentenceEditor> createState() => _SentenceEditorState();
+}
+
+class _SentenceEditorState extends State<_SentenceEditor> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      // 키보드가 올라오면 그만큼 위로 민다.
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(S.sentenceEdit, style: context.text.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                S.sentenceEditGuide,
+                textAlign: TextAlign.center,
+                style: context.text.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                minLines: 3,
+                maxLines: 8,
+                keyboardType: TextInputType.multiline,
+                style: context.text.bodyLarge,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(kCardRadius)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: PillButton(
+                      label: S.cancel,
+                      tone: PillTone.light,
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 3,
+                    child: PillButton(
+                      label: S.sentenceEditDone,
+                      icon: Icons.check_rounded,
+                      onPressed: () => Navigator.pop(context, _controller.text),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

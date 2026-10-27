@@ -15,11 +15,16 @@ class QuotesDao extends DatabaseAccessor<AppDatabase> with _$QuotesDaoMixin {
 
   /// 삭제되지 않은 구절을 최신순으로. [query]가 있으면
   /// content·book_title·author 중 하나라도 부분일치하는 것만.
-  Stream<List<Quote>> watchQuotes({String query = ''}) {
+  /// [cherishedOnly]면 새긴 구절만.
+  Stream<List<Quote>> watchQuotes({
+    String query = '',
+    bool cherishedOnly = false,
+  }) {
     final q = query.trim();
     final select = this.select(quotes)
       ..where((t) => t.deletedAt.isNull())
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    if (cherishedOnly) select.where((t) => t.cherishedAt.isNotNull());
     if (q.isNotEmpty) {
       final pattern = '%${_escapeLike(q)}%';
       select.where(
@@ -82,6 +87,17 @@ class QuotesDao extends DatabaseAccessor<AppDatabase> with _$QuotesDaoMixin {
     final now = nowIso();
     return (update(quotes)..where((t) => t.id.equals(id))).write(
       QuotesCompanion(deletedAt: Value(now), updatedAt: Value(now)),
+    );
+  }
+
+  /// 마음에 새기기/거두기. 동기화되도록 updated_at도 갱신한다.
+  Future<void> setCherished(String id, bool cherished) {
+    final now = nowIso();
+    return (update(quotes)..where((t) => t.id.equals(id))).write(
+      QuotesCompanion(
+        cherishedAt: Value(cherished ? now : null),
+        updatedAt: Value(now),
+      ),
     );
   }
 

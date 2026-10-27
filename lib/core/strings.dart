@@ -9,6 +9,10 @@ abstract final class S {
   static const searchHint = '구절·책 제목·저자 검색';
   static const emptyQuotes = '아직 담긴 구절이 없습니다';
   static const emptySearch = '찾는 구절이 없습니다';
+  static const emptyCherished = '아직 마음에 새긴 구절이 없습니다';
+  static const filterAll = '모든 구절';
+  static const filterCherished = '새긴 구절';
+  static String cherishedCount(int n) => '새긴 구절 $n';
   static const fabCapture = '담기';
   static const settings = '설정';
 
@@ -22,18 +26,30 @@ abstract final class S {
   static const ocrEmpty = '사진에서 글자를 찾지 못했습니다';
   static const imagePickFailed = '사진을 가져오지 못했습니다';
 
+  // 부분 지정
+  static const regionTitle = '부분 지정';
+  static const regionGuide = '담고 싶은 부분을 손가락으로 그어 네모를 그리세요';
+  static const regionEmpty = '네모 안에 읽은 글자가 없습니다. 다시 그려 주세요';
+  static const regionAll = '전체 문장';
+  static const regionButton = '이 부분만 읽기';
+  static const regionReset = '다시 그리기';
+
   // 문장 고르기
   static const selectTitle = '문장 고르기';
-  static const selectGuide = '담을 문장을 차례로 눌러 고르세요';
+  static const selectGuide = '담을 문장을 차례로 눌러 고르세요. 연필을 누르면 글자를 고칠 수 있어요';
+  static const sentenceEdit = '문장 고치기';
+  static const sentenceEditGuide = '잘못 읽힌 글자를 바로잡아 주세요. 모두 지우면 목록에서 빠집니다';
+  static const sentenceEditDone = '고치기';
+  static const saveEditGuide = '담기 전에 구절을 한 번 더 고칠 수 있어요';
   static String selectButton(int n) => '$n개 문장 담기';
   static const selectNone = '문장을 골라 주세요';
 
   // 담기
   static const saveTitle = '담기';
   static const contentLabel = '구절';
-  static const bookTitleLabel = '책 제목';
-  static const authorLabel = '저자';
-  static const pageLabel = '쪽수';
+  static const bookTitleLabel = '책 제목 (선택)';
+  static const authorLabel = '저자 (선택)';
+  static const pageLabel = '쪽수 (선택)';
   static const memoLabel = '메모';
   static const saveButton = '함에 담기';
   static const contentRequired = '구절을 입력해 주세요';
@@ -54,11 +70,25 @@ abstract final class S {
   static const imageMissing = '원본 사진을 찾을 수 없습니다';
   static const notFound = '구절을 찾을 수 없습니다';
   static String pageSuffix(int p) => '$p쪽';
+  static const cherish = '마음에 새기기';
+  static const cherished = '마음에 새김';
+  static const uncherish = '새김 거두기';
+  static const sealCherished = '새김';
   static const createdAtLabel = '담은 날';
   static const updatedAtLabel = '고친 날';
 
+  // 보내기(공유)
+  static const share = '보내기';
+  static const shareTitle = '구절 보내기';
+  static const shareGuide = '이 카드를 다른 사람에게 보낼 수 있어요';
+  static const shareAsImage = '카드로 보내기';
+  static const shareAsText = '글로 보내기';
+  static const shareFailed = '보내지 못했습니다';
+  static const shareTag = '#구절함';
+
   // 설정
   static const settingsTitle = '설정';
+  static const themeSection = '색 테마';
   static const googleSection = 'Google 드라이브 백업';
   static const googleLink = 'Google 계정 연동';
   static const googleLinkDesc = '내 Google 드라이브의 앱 전용 공간에 구절을 보관합니다';
@@ -73,6 +103,8 @@ abstract final class S {
   static const appSection = '앱 정보';
   static const appVersion = '앱 버전';
   static const signInFailed = 'Google 로그인에 실패했습니다';
+  static const googleNotConfigured =
+      '이 빌드에는 Google 연동 설정(클라이언트 ID)이 없습니다. google_oauth.json을 넣고 다시 빌드해 주세요';
   static const signInCanceled = '로그인을 취소했습니다';
   static const authorizationDenied = 'Drive 접근 권한이 허용되지 않았습니다';
   static const syncNotLinked = 'Google 계정이 연동되어 있지 않습니다';
