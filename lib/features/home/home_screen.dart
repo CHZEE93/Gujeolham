@@ -70,14 +70,14 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                _FilterChip(
+                PillChip(
                   label: S.filterAll,
                   selected: !cherishedOnly,
                   onTap: () =>
                       ref.read(cherishedFilterProvider.notifier).set(false),
                 ),
                 const SizedBox(width: 8),
-                _FilterChip(
+                PillChip(
                   label: S.filterCherished,
                   icon: Icons.favorite_rounded,
                   selected: cherishedOnly,
@@ -156,56 +156,6 @@ class _SearchFieldState extends State<_SearchField> {
                     widget.onChanged('');
                   },
                 ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 모든 구절 / 새긴 구절 고르기.
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.icon,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.hanji;
-    final fg = selected ? c.paper : c.galmuk;
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: selected ? c.galmuk : c.paper,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: selected ? c.galmuk : c.line),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 14, color: selected ? c.paper : c.dahong),
-                const SizedBox(width: 5),
-              ],
-              Text(
-                label,
-                style: context.text.bodySmall?.copyWith(color: fg),
-              ),
-            ],
-          ),
         ),
       ),
     );

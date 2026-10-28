@@ -13,12 +13,16 @@ class Seal extends StatelessWidget {
     this.text = S.sealDam,
     this.size = 30,
     this.color,
+    this.textColor,
     this.angle = 0,
   });
 
   final String text;
   final double size;
   final Color? color;
+
+  /// 낙관 글자 색. 없으면 테마의 종이 백색.
+  final Color? textColor;
 
   /// 라디안. 가이드: ±4~7°로 삐뚤게.
   final double angle;
@@ -56,7 +60,7 @@ class Seal extends StatelessWidget {
           textAlign: TextAlign.center,
           style: juaStyle(
             TextStyle(
-              color: c.paper,
+              color: textColor ?? c.paper,
               fontSize: size * (vertical ? 0.42 : 0.5),
               height: vertical ? 1.0 : 1.1,
             ),

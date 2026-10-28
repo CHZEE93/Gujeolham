@@ -80,9 +80,12 @@ abstract final class S {
   // 보내기(공유)
   static const share = '보내기';
   static const shareTitle = '구절 보내기';
-  static const shareGuide = '이 카드를 다른 사람에게 보낼 수 있어요';
-  static const shareAsImage = '카드로 보내기';
-  static const shareAsText = '글로 보내기';
+  static const shareModeCard = '카드';
+  static const shareModeText = '글';
+  static const shareCardBasic = '기본';
+  static const shareCardPrestige = '프레스티지';
+  static const shareSendCard = '이 카드 보내기';
+  static const shareSendText = '이 글 보내기';
   static const shareFailed = '보내지 못했습니다';
   static const shareTag = '#구절함';
 

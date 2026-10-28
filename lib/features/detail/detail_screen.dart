@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/router.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/confirm_dialog.dart';
@@ -15,7 +16,7 @@ import '../../core/widgets/seal.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../save/quote_form.dart';
-import '../share/share_sheet.dart';
+
 
 class DetailScreen extends ConsumerStatefulWidget {
   const DetailScreen({super.key, required this.id});
@@ -224,7 +225,7 @@ class _QuoteView extends ConsumerWidget {
                 icon: Icons.ios_share_rounded,
                 tone: PillTone.light,
                 height: 46,
-                onPressed: () => showShareSheet(context, quote),
+                onPressed: () => context.push(Routes.share(quote.id)),
               ),
             ),
           ],

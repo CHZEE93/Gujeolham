@@ -9,6 +9,7 @@ import '../features/home/splash_screen.dart';
 import '../features/save/save_screen.dart';
 import '../features/select/select_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/share/share_screen.dart';
 
 abstract final class Routes {
   static const splash = '/splash';
@@ -19,6 +20,7 @@ abstract final class Routes {
   static const save = '/capture/select/save';
   static const settings = '/settings';
   static String detail(String id) => '/quote/$id';
+  static String share(String id) => '/quote/$id/share';
 }
 
 final routerProvider = Provider<GoRouter>((ref) => buildRouter());
@@ -59,6 +61,13 @@ GoRouter buildRouter({String initialLocation = Routes.splash}) {
             path: 'quote/:id',
             builder: (context, state) =>
                 DetailScreen(id: state.pathParameters['id']!),
+            routes: [
+              GoRoute(
+                path: 'share',
+                builder: (context, state) =>
+                    ShareScreen(id: state.pathParameters['id']!),
+              ),
+            ],
           ),
           GoRoute(
             path: 'settings',

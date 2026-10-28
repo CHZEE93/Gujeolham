@@ -77,7 +77,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # 스타일 가이드 서체(Jua, 고운돋움). google_fonts가 네트워크 대신 이 파일을 쓴다.
+  # 스타일 가이드 서체(Jua, 고운돋움)와 프레스티지 카드의 고운바탕. google_fonts가 네트워크 대신 이 파일을 쓴다.
   assets:
     - assets/google_fonts/
 

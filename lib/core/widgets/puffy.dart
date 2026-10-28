@@ -247,3 +247,54 @@ class SandChip extends StatelessWidget {
     );
   }
 }
+
+/// 알약 모양 선택 칩(홈의 모든 구절/새긴 구절, 보내기의 카드/글).
+class PillChip extends StatelessWidget {
+  const PillChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.hanji;
+    final fg = selected ? c.paper : c.galmuk;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? c.galmuk : c.paper,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: selected ? c.galmuk : c.line),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: selected ? c.paper : c.dahong),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: context.text.bodySmall?.copyWith(color: fg),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -306,3 +306,15 @@ README.md  WORKLOG.md  google_oauth.example.json
 - 첫 동기화는 `403: Google Drive API has not been used in project ... or it is disabled`로 실패함. 클라이언트가 있는 프로젝트에 Drive API가 켜져 있지 않았던 것이 원인. 그 프로젝트에서 사용 설정한 뒤 **연동과 동기화 모두 성공**
 - 오류 내용은 앱 데이터의 `files/sync_state.json`(`last_error`)에서 읽음. 디버그 빌드는 `adb shell run-as com.jshchz.gujeolham cat files/sync_state.json`으로 볼 수 있음
 - 남은 일: 실기기에서 백업 파일 내보내기/가져오기 확인. 스토어에 배포할 때는 릴리스 키(또는 Play 앱 서명) SHA-1을 등록한 Android 클라이언트가 더 필요함
+
+## 15. 보내기 화면: 미리 보기 · 카드 고르기 · 프레스티지 카드 (2026-10-28)
+
+- 상세의 "보내기"가 아래에서 올라오는 창 대신 **보내기 화면**(`/quote/:id/share`)을 연다. 위쪽 "카드 / 글"로 보낼 방식을 고르고, 가운데에서 보낼 모습을 그대로 미리 본 뒤, 아래 "이 카드 보내기 / 이 글 보내기"로 보낸다
+- 카드 모양은 앱 테마와 따로 고른다. 기본 5가지(지금 테마·한지·청자·먹·쪽빛)와 **프레스티지** 5가지(금박·자개·궁중·달빛·비단). 프레스티지 카드는 장식을 CustomPainter로 그리고 글은 가운데 맞춤 명조(고운바탕)로 쓴다
+- 마지막에 고른 카드 모양은 `app_settings.json`의 `share_card_style`에 저장해서 다음에도 그 모양으로 시작한다. `AppSettingsStore`가 키별로 합쳐서 쓰도록 바꿈(테마 값을 지우지 않도록)
+- 카드는 320×400으로 그리고 이미지로 보낼 때는 화면 크기와 상관없이 가로 1080px PNG로 저장한다
+- 한글이 '사람/이다'처럼 낱말 중간에서 줄이 바뀌던 문제: 카드와 글 미리 보기에서 낱말 안 글자 사이에 단어 결합자(U+2060)를 넣어 띄어쓰기에서만 줄을 바꾼다(`keepWords`). 실제로 보내는 글에는 넣지 않는다
+- 서체: `assets/google_fonts/GowunBatang-Regular.ttf`(OFL, 약 8MB) 추가. 앱 크기를 생각해 Bold는 넣지 않음
+- 정리: `share_sheet.dart` 삭제 → `share_card.dart`(카드 모양), `share_screen.dart`(화면). 홈의 선택 칩을 `PillChip`(puffy.dart)으로 옮겨 같이 씀. `Seal`에 `textColor` 추가
+- 미리보기 도구: `15_share_geumbak`, `16_share_text`, `17_share_cards`(모든 카드 모음) 추가
+- 확인: `flutter analyze` 오류 0건, `flutter test` 39개 통과, 미리보기 렌더링 확인, 실기기에 설치. **실기기에서 보내기 동작은 아직 확인하지 않음**

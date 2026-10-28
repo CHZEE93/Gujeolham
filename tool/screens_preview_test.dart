@@ -20,6 +20,8 @@ import 'package:gujeolham/data/app_settings.dart';
 import 'package:gujeolham/data/database.dart';
 import 'package:gujeolham/data/providers.dart';
 import 'package:gujeolham/features/capture/capture_session.dart';
+import 'package:gujeolham/features/share/share_card.dart';
+import 'package:gujeolham/features/share/share_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:path/path.dart' as p;
 
@@ -231,6 +233,67 @@ void main() {
         await t.tap(find.text('보내기'));
         await t.pump(const Duration(milliseconds: 600));
       }));
+  testWidgets('share_prestige', (t) => shoot(t, '15_share_geumbak', Routes.share('q0'),
+      prepare: (c) => c.read(shareCardStyleProvider.notifier).select(ShareCardStyle.geumbak)));
+  testWidgets('share_text', (t) => shoot(t, '16_share_text', Routes.share('q0'),
+      act: (t) async {
+        await t.tap(find.text('글'));
+        await t.pump(const Duration(milliseconds: 300));
+      }));
+
+  // 보내기 카드 모음: 모든 모양을 실제 크기(320x400)로 5장씩 두 줄.
+  testWidgets('share_cards', (t) async {
+    const gap = 16.0;
+    t.view.physicalSize = Size(kShareCardSize.width * 5 + gap * 6, kShareCardSize.height * 2 + gap * 3);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await t.runAsync(_loadFonts);
+    final q = _quotes[0];
+    final quote = Quote(
+      id: 'q0',
+      content: q.$1,
+      bookTitle: q.$2,
+      author: q.$3,
+      page: q.$4,
+      createdAt: '2026-10-20T09:00:00Z',
+      updatedAt: '2026-10-20T09:00:00Z',
+    );
+    final key = GlobalKey();
+    await t.pumpWidget(
+      RepaintBoundary(
+        key: key,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(gap),
+              child: Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final s in ShareCardStyle.values) ShareCard(quote: quote, style: s),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await t.runAsync(() async {
+        await GoogleFonts.pendingFonts();
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+      });
+      await t.pump(const Duration(milliseconds: 16));
+    }
+    await t.runAsync(() async {
+      final b = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final img = await b.toImage(pixelRatio: 1.5);
+      final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+      await File('$_out/17_share_cards.png').writeAsBytes(bytes!.buffer.asUint8List());
+    });
+  });
 
   // 저장 완료 연출: 함이가 웃고 낙관이 찍힌 직후
   testWidgets('celebration', (t) async {
