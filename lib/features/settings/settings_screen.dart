@@ -1,7 +1,9 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -9,7 +11,9 @@ import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/hanji_page.dart';
 import '../../core/widgets/puffy.dart';
 import '../../data/app_settings.dart';
+import '../../sync/backup_service.dart';
 import '../../sync/sync_controller.dart';
+import '../../sync/sync_merge.dart';
 
 final _packageInfoProvider = FutureProvider<PackageInfo>(
   (ref) => PackageInfo.fromPlatform(),
@@ -24,8 +28,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _linking = false;
+  bool _backupBusy = false;
 
   SyncController get _sync => ref.read(syncControllerProvider.notifier);
+  BackupService get _backup => ref.read(backupServiceProvider);
 
   void _toast(String msg) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
@@ -60,6 +66,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           : (ref.read(syncControllerProvider).lastError ?? S.unknownError),
     );
   }
+
+  Future<void> _runBackup(Future<void> Function() action) async {
+    if (_backupBusy) return;
+    setState(() => _backupBusy = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) setState(() => _backupBusy = false);
+    }
+  }
+
+  /// iPad에서는 공유 창을 띄울 기준 위치가 필요하다.
+  Rect? _origin(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox?;
+    return box == null ? null : box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  Future<void> _export(Rect? origin) => _runBackup(() async {
+    try {
+      final file = await _backup.writeBackupFile();
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'application/json')],
+          sharePositionOrigin: origin,
+        ),
+      );
+    } catch (_) {
+      if (mounted) _toast(S.exportFailed);
+    }
+  });
+
+  Future<void> _import() => _runBackup(() async {
+    String message;
+    try {
+      final picked = await FilePicker.pickFile();
+      if (picked == null) return;
+      final n = await _backup.importBytes(await picked.readAsBytes());
+      if (n > 0) _sync.syncSilently();
+      message = n > 0 ? S.importDone(n) : S.importNothing;
+    } on UnsupportedRemoteFormat {
+      message = S.importNewerFormat;
+    } on FormatException {
+      message = S.importFormatError;
+    } catch (_) {
+      message = S.importFailed;
+    }
+    if (mounted) _toast(message);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +186,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     height: 48,
                     onPressed: (!s.linked || busy) ? null : _syncNow,
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          _SectionTitle(S.backupSection),
+          PuffyCard(
+            padding: const EdgeInsets.fromLTRB(20, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(S.backupDesc, style: context.text.bodySmall),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Builder(
+                        builder: (context) => PillButton(
+                          label: S.exportBackup,
+                          icon: Icons.upload_file_rounded,
+                          tone: PillTone.light,
+                          height: 48,
+                          onPressed: _backupBusy
+                              ? null
+                              : () => _export(_origin(context)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: PillButton(
+                        label: S.importBackup,
+                        icon: Icons.download_rounded,
+                        tone: PillTone.light,
+                        height: 48,
+                        onPressed: _backupBusy ? null : _import,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

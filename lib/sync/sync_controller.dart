@@ -9,6 +9,7 @@ import '../core/strings.dart';
 import '../data/providers.dart';
 import 'drive_sync_service.dart';
 import 'google_auth.dart';
+import 'sync_merge.dart';
 import 'sync_state_store.dart';
 
 class SyncStatus {

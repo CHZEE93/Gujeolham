@@ -115,6 +115,18 @@ abstract final class S {
   static const driveError = 'Google 드라이브 요청이 실패했습니다';
   static const remoteFormatError = '드라이브의 백업 파일을 읽을 수 없습니다';
 
+  // 백업 파일
+  static const backupSection = '백업 파일';
+  static const backupDesc = '구절을 파일 하나로 내보내 두었다가, 다른 기기나 다시 설치한 앱에서 가져와 합칠 수 있습니다. 원본 사진은 담기지 않습니다';
+  static const exportBackup = '내보내기';
+  static const importBackup = '가져오기';
+  static const exportFailed = '백업 파일을 만들지 못했습니다';
+  static String importDone(int n) => '구절 $n개를 가져왔습니다';
+  static const importNothing = '새로 가져올 구절이 없습니다';
+  static const importFormatError = '구절함 백업 파일이 아니거나 읽을 수 없습니다';
+  static const importNewerFormat = '더 새로운 버전의 앱에서 만든 파일입니다. 앱을 업데이트해 주세요';
+  static const importFailed = '백업 파일을 가져오지 못했습니다';
+
   // 공통
   static const unknownError = '알 수 없는 오류가 발생했습니다';
   static const dateFormat = 'yyyy.MM.dd HH:mm';

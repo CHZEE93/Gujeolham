@@ -286,4 +286,23 @@ README.md  WORKLOG.md  google_oauth.example.json
 
 ### 다음 단계
 1. **Google Cloud 등록 안내**: Drive API 사용 설정, 동의 화면(drive.appdata, 테스트 사용자), 웹·Android 클라이언트 → `google_oauth.json` 만들기 → `--dart-define-from-file`로 빌드하고 실기기에서 연동·동기화 확인
-2. **백업 파일 내보내기/가져오기**: 설정에서 `quotes.json`(동기화 형식과 같음)을 공유 창으로 내보내고, 파일을 골라 가져와 병합. Google 등록 없이 쓰는 백업 수단
+2. **백업 파일 내보내기/가져오기**: 설정에서 `quotes.json`(동기화 형식과 같음)을 공유 창으로 내보내고, 파일을 골라 가져와 병합. Google 등록 없이 쓰는 백업 수단 → §13에서 완료
+
+## 13. 백업 파일 내보내기/가져오기 (2026-10-28)
+
+- **설정 > 백업 파일** 카드: "내보내기"는 `gujeolham_backup_yyyyMMdd.json`을 임시 폴더에 쓰고 공유 창으로 보냄. "가져오기"는 파일을 골라 합침
+- 형식은 Drive 동기화 파일과 같음(version 1, 원본 사진 제외). 버린 구절(`deleted_at`)도 담아서, 다른 기기에서 가져와도 버린 구절이 되살아나지 않음
+- 합치기 규칙도 동기화와 같음: id로 맞추고 `updated_at`이 늦은 쪽을 채택(`remoteWinners` → `applyRemote`). 덮어쓰기가 아니라서 확인 창은 두지 않음. 가져온 뒤 연동돼 있으면 Drive에도 동기화함
+- 알림: "구절 n개를 가져왔습니다"(버린 구절은 세지 않음), 바뀐 것이 없으면 "새로 가져올 구절이 없습니다". 백업 파일이 아니면(JSON 아님, `quotes` 목록 없음, 빈 파일) 그렇다고 알려 주고, 더 새로운 형식 버전이면 앱 업데이트를 안내함
+- 코드: `lib/sync/backup_service.dart`(새 파일), `sync_merge.dart`에 `decodeBackup`·`checkFormatVersion` 추가, `UnsupportedRemoteFormat`을 `drive_sync_service.dart`에서 `sync_merge.dart`로 옮김
+- 패키지: `file_picker` ^13.3.0 추가(Android에서는 시스템 파일 선택 창을 쓰므로 권한을 추가하지 않음)
+- 확인: `flutter analyze` 오류 0건, `flutter test` 39개 통과(`test/backup_test.dart` 5개 추가), `flutter build apk --debug` 성공, 설정 화면 미리보기 확인. **실기기에서 공유 창과 파일 선택 창은 확인하지 않음**
+
+## 14. Google Cloud 등록 · 실기기 연동 확인 (2026-10-28)
+
+- 사용자가 Google Cloud 콘솔에서 직접 설정함: 새 프로젝트, Drive API 사용 설정, Google 인증 플랫폼(외부, 테스트 상태), 테스트 사용자 추가, `drive.appdata` 범위 추가, 웹 클라이언트와 Android 클라이언트(`com.jshchz.gujeolham` + 이 PC 디버그 키 SHA-1)
+- 범위 목록에서 `drive.appdata`가 보이지 않아 **범위 직접 추가** 칸에 URL을 입력해 넣음
+- 저장소 루트에 `google_oauth.json`(웹 클라이언트 ID만 넣음, git 제외)을 만들고 `flutter build apk --debug --dart-define-from-file=google_oauth.json`로 빌드해 실기기(SM S906N, Android 16)에 설치
+- 첫 동기화는 `403: Google Drive API has not been used in project ... or it is disabled`로 실패함. 클라이언트가 있는 프로젝트에 Drive API가 켜져 있지 않았던 것이 원인. 그 프로젝트에서 사용 설정한 뒤 **연동과 동기화 모두 성공**
+- 오류 내용은 앱 데이터의 `files/sync_state.json`(`last_error`)에서 읽음. 디버그 빌드는 `adb shell run-as com.jshchz.gujeolham cat files/sync_state.json`으로 볼 수 있음
+- 남은 일: 실기기에서 백업 파일 내보내기/가져오기 확인. 스토어에 배포할 때는 릴리스 키(또는 Play 앱 서명) SHA-1을 등록한 Android 클라이언트가 더 필요함

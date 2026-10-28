@@ -1,9 +1,27 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../data/database.dart';
 
-/// Drive에 올리는 파일 형식 버전.
+/// Drive에 올리는 파일(백업 파일도 같음) 형식 버전.
 const kSyncFormatVersion = 1;
+
+/// 파일 형식이 이 앱이 아는 것보다 새로울 때.
+class UnsupportedRemoteFormat implements Exception {
+  const UnsupportedRemoteFormat(this.version);
+  final Object? version;
+}
+
+/// 파일의 형식 버전을 확인한다. 더 새로운 버전이면 [UnsupportedRemoteFormat].
+void checkFormatVersion(Object? decoded) {
+  if (decoded is Map) {
+    final version = decoded['version'];
+    if (version is! int || version > kSyncFormatVersion) {
+      throw UnsupportedRemoteFormat(version);
+    }
+  }
+}
 
 /// image_path를 제외한 구절 → JSON.
 Map<String, Object?> quoteToJson(Quote q) => {
@@ -62,6 +80,17 @@ List<QuotesCompanion> parseExport(Object? decoded) {
     for (final e in list)
       if (e is Map) ?quoteFromJson(e.cast<String, Object?>()),
   ];
+}
+
+/// 사용자가 고른 백업 파일을 해석한다. 동기화 파일과 달리 빈 파일도 받지 않아,
+/// JSON이 아니거나 quotes 목록이 없으면 [FormatException]을 던진다.
+List<QuotesCompanion> decodeBackup(List<int> bytes) {
+  final decoded = jsonDecode(utf8.decode(bytes));
+  if (decoded is! Map || decoded['quotes'] is! List) {
+    throw const FormatException('not a backup file');
+  }
+  checkFormatVersion(decoded);
+  return parseExport(decoded);
 }
 
 bool isNewer(String a, String b) =>

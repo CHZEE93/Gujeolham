@@ -7,12 +7,6 @@ import 'package:http/http.dart' as http;
 import '../data/quotes_dao.dart';
 import 'sync_merge.dart';
 
-/// 원격 파일 형식이 이 앱이 아는 것보다 새로울 때.
-class UnsupportedRemoteFormat implements Exception {
-  const UnsupportedRemoteFormat(this.version);
-  final Object? version;
-}
-
 /// Drive appDataFolder의 `quotes.json` 하나로 전체를 동기화한다.
 ///
 /// 원격 다운로드 → id 매칭 → updated_at이 늦은 쪽 채택(deleted_at 포함)
@@ -89,12 +83,7 @@ class DriveSyncService {
     }
     if (bytes.isEmpty) return null;
     final decoded = jsonDecode(utf8.decode(bytes));
-    if (decoded is Map) {
-      final version = decoded['version'];
-      if (version is! int || version > kSyncFormatVersion) {
-        throw UnsupportedRemoteFormat(version);
-      }
-    }
+    checkFormatVersion(decoded);
     return decoded;
   }
 
