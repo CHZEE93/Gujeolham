@@ -233,8 +233,21 @@ void main() {
         await t.tap(find.text('보내기'));
         await t.pump(const Duration(milliseconds: 600));
       }));
-  testWidgets('share_prestige', (t) => shoot(t, '15_share_geumbak', Routes.share('q0'),
-      prepare: (c) => c.read(shareCardStyleProvider.notifier).select(ShareCardStyle.geumbak)));
+  testWidgets('share_prestige', (t) => shoot(t, '15_share_maehwa', Routes.share('q0'),
+      prepare: (c) => c.read(shareCardStyleProvider.notifier).select(ShareCardStyle.maehwa)));
+  testWidgets('home_reading', (t) => shoot(t, '18_home_reading', Routes.home,
+      prepare: (c) => c.read(readingBookProvider.notifier).set('데미안', '헤르만 헤세')));
+  testWidgets('write', (t) => shoot(t, '19_write', Routes.write,
+      prepare: (c) => c.read(readingBookProvider.notifier).set('데미안', '헤르만 헤세')));
+  testWidgets('capture', (t) => shoot(t, '20_capture', Routes.capture));
+  testWidgets('share_favorites', (t) => shoot(t, '21_share_favorites', Routes.share('q0'),
+      prepare: (c) {
+        final fav = c.read(favoriteCardStylesProvider.notifier);
+        fav.toggle(ShareCardStyle.moran);
+        fav.toggle(ShareCardStyle.dalbam);
+        fav.toggle(ShareCardStyle.jjok);
+        c.read(shareCardStyleProvider.notifier).select(ShareCardStyle.dalbam);
+      }));
   testWidgets('share_text', (t) => shoot(t, '16_share_text', Routes.share('q0'),
       act: (t) async {
         await t.tap(find.text('글'));
@@ -244,7 +257,10 @@ void main() {
   // 보내기 카드 모음: 모든 모양을 실제 크기(320x400)로 5장씩 두 줄.
   testWidgets('share_cards', (t) async {
     const gap = 16.0;
-    t.view.physicalSize = Size(kShareCardSize.width * 5 + gap * 6, kShareCardSize.height * 2 + gap * 3);
+    t.view.physicalSize = Size(
+      kShareCardSize.width * 5 + gap * 6,
+      kShareCardSize.height + kPaperCardSize.height * 3 + gap * 5,
+    );
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     await t.runAsync(_loadFonts);

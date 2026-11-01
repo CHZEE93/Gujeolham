@@ -72,6 +72,15 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
                     tone: PillTone.light,
                     onPressed: () => _pick(ImageSource.gallery),
                   ),
+                  const SizedBox(height: 4),
+                  TextButton.icon(
+                    onPressed: () => context.push(Routes.write),
+                    icon: const Icon(Icons.edit_note_rounded, size: 20),
+                    label: const Text(S.writeByHand),
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.hanji.galmukSub,
+                    ),
+                  ),
                 ],
               ),
             ),

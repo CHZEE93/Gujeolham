@@ -18,6 +18,7 @@ abstract final class Routes {
   static const region = '/capture/region';
   static const select = '/capture/select';
   static const save = '/capture/select/save';
+  static const write = '/write';
   static const settings = '/settings';
   static String detail(String id) => '/quote/$id';
   static String share(String id) => '/quote/$id/share';
@@ -56,6 +57,10 @@ GoRouter buildRouter({String initialLocation = Routes.splash}) {
                 ],
               ),
             ],
+          ),
+          GoRoute(
+            path: 'write',
+            builder: (context, state) => const SaveScreen(manual: true),
           ),
           GoRoute(
             path: 'quote/:id',

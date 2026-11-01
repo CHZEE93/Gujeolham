@@ -53,9 +53,16 @@ class QuoteFormControllers {
 }
 
 class QuoteFormFields extends StatelessWidget {
-  const QuoteFormFields({super.key, required this.controllers});
+  const QuoteFormFields({
+    super.key,
+    required this.controllers,
+    this.autofocus = false,
+  });
 
   final QuoteFormControllers controllers;
+
+  /// 구절 칸에 바로 커서를 둔다(직접 쓰기).
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +72,7 @@ class QuoteFormFields extends StatelessWidget {
       children: [
         TextFormField(
           controller: c.content,
+          autofocus: autofocus,
           minLines: 4,
           maxLines: null,
           style: context.text.bodyLarge,
@@ -74,7 +82,7 @@ class QuoteFormFields extends StatelessWidget {
               (v == null || v.trim().isEmpty) ? S.contentRequired : null,
         ),
         const SizedBox(height: 16),
-        _BookTitleField(controller: c.bookTitle, authorController: c.author),
+        BookTitleField(controller: c.bookTitle, authorController: c.author),
         const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,8 +126,9 @@ class QuoteFormFields extends StatelessWidget {
 }
 
 /// 최근 저장한 책 제목을 자동완성으로 제안한다. 고르면 저자가 비어 있을 때 채운다.
-class _BookTitleField extends ConsumerStatefulWidget {
-  const _BookTitleField({
+class BookTitleField extends ConsumerStatefulWidget {
+  const BookTitleField({
+    super.key,
     required this.controller,
     required this.authorController,
   });
@@ -128,10 +137,10 @@ class _BookTitleField extends ConsumerStatefulWidget {
   final TextEditingController authorController;
 
   @override
-  ConsumerState<_BookTitleField> createState() => _BookTitleFieldState();
+  ConsumerState<BookTitleField> createState() => _BookTitleFieldState();
 }
 
-class _BookTitleFieldState extends ConsumerState<_BookTitleField> {
+class _BookTitleFieldState extends ConsumerState<BookTitleField> {
   final _focus = FocusNode();
 
   @override
@@ -153,9 +162,7 @@ class _BookTitleFieldState extends ConsumerState<_BookTitleField> {
         final q = value.text.trim();
         if (books.isEmpty) return const [];
         if (q.isEmpty) return books.take(5);
-        return books
-            .where((b) => b.title.contains(q) && b.title != q)
-            .take(5);
+        return books.where((b) => b.title.contains(q) && b.title != q).take(5);
       },
       onSelected: (b) {
         if (widget.authorController.text.trim().isEmpty && b.author != null) {

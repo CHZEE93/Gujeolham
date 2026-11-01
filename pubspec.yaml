@@ -80,6 +80,8 @@ flutter:
   # 스타일 가이드 서체(Jua, 고운돋움)와 프레스티지 카드의 고운바탕. google_fonts가 네트워크 대신 이 파일을 쓴다.
   assets:
     - assets/google_fonts/
+    # 프레스티지 카드의 편지지 그림.
+    - assets/letter_papers/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

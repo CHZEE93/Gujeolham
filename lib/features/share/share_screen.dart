@@ -70,6 +70,45 @@ final shareCardStyleProvider =
       ShareCardStyleController.new,
     );
 
+/// 찜한 편지지(카드 모양). 찜한 순서대로 보내기 화면 맨 위 줄에 따로 보여 준다.
+class FavoriteCardStylesController extends Notifier<List<ShareCardStyle>> {
+  static const _key = 'favorite_card_styles';
+  bool _changed = false;
+
+  @override
+  List<ShareCardStyle> build() {
+    unawaited(_load());
+    return const [];
+  }
+
+  Future<void> _load() async {
+    final raw = await ref.read(appSettingsStoreProvider).read(_key);
+    if (_changed || raw == null || raw.isEmpty) return;
+    // 없어진 모양(예전 프레스티지 카드)은 건너뛴다.
+    state = [
+      for (final n in raw.split(','))
+        for (final s in ShareCardStyle.values)
+          if (s.name == n) s,
+    ];
+  }
+
+  /// 찜했으면 풀고, 아니면 찜한다. 바뀐 뒤 찜 상태를 돌려준다.
+  Future<bool> toggle(ShareCardStyle style) async {
+    _changed = true;
+    final on = !state.contains(style);
+    state = on ? [...state, style] : [...state.where((s) => s != style)];
+    await ref
+        .read(appSettingsStoreProvider)
+        .write(_key, state.map((s) => s.name).join(','));
+    return on;
+  }
+}
+
+final favoriteCardStylesProvider =
+    NotifierProvider<FavoriteCardStylesController, List<ShareCardStyle>>(
+      FavoriteCardStylesController.new,
+    );
+
 /// 보내기: 카드나 글로 보낼 모습을 미리 보고, 카드 모양을 고른 뒤 보낸다.
 class ShareScreen extends ConsumerStatefulWidget {
   const ShareScreen({super.key, required this.id});
@@ -111,9 +150,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text(S.shareFailed)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text(S.shareFailed)));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -125,11 +163,13 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     final boundary =
         _cardKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
     final image = await boundary.toImage(
-      pixelRatio: _imageWidth / kShareCardSize.width,
+      pixelRatio: _imageWidth / ref.read(shareCardStyleProvider).size.width,
     );
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
-    final dir = Directory(p.join((await getTemporaryDirectory()).path, 'share'));
+    final dir = Directory(
+      p.join((await getTemporaryDirectory()).path, 'share'),
+    );
     await dir.create(recursive: true);
     final file = File(p.join(dir.path, 'gujeolham_${quote.id}.png'));
     await file.writeAsBytes(bytes!.buffer.asUint8List(), flush: true);
@@ -193,7 +233,9 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
                 builder: (context) => PillButton(
                   label: _asText ? S.shareSendText : S.shareSendCard,
                   icon: Icons.ios_share_rounded,
-                  onPressed: _busy ? null : () => _send(quote, _origin(context)),
+                  onPressed: _busy
+                      ? null
+                      : () => _send(quote, _origin(context)),
                 ),
               ),
             ),
@@ -217,7 +259,7 @@ class _CardPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: AspectRatio(
-        aspectRatio: kShareCardSize.aspectRatio,
+        aspectRatio: style.size.aspectRatio,
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(kCardRadius),
@@ -264,8 +306,9 @@ class _TextPreview extends StatelessWidget {
   }
 }
 
-/// 카드 모양 고르기. 기본 한 줄, 프레스티지 한 줄. 좁은 화면에서는 줄마다 가로로 넘긴다.
-class _StylePicker extends StatelessWidget {
+/// 카드 모양 고르기. 찜한 편지지가 있으면 맨 위 줄에 따로, 그 아래 기본·프레스티지 줄.
+/// 좁은 화면에서는 줄마다 가로로 넘긴다. 하트를 누르거나 카드를 길게 누르면 찜한다.
+class _StylePicker extends ConsumerWidget {
   const _StylePicker({
     required this.quote,
     required this.selected,
@@ -277,29 +320,54 @@ class _StylePicker extends StatelessWidget {
   final ValueChanged<ShareCardStyle> onSelect;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.hanji;
+    final favorites = ref.watch(favoriteCardStylesProvider);
+
+    Future<void> toggleFavorite(ShareCardStyle s) async {
+      final messenger = ScaffoldMessenger.of(context);
+      final on = await ref.read(favoriteCardStylesProvider.notifier).toggle(s);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              on ? S.favoriteAdded(s.label) : S.favoriteRemoved(s.label),
+            ),
+            duration: const Duration(milliseconds: 1500),
+          ),
+        );
+    }
+
     Widget tile(ShareCardStyle s) => _StyleTile(
       quote: quote,
       style: s,
       selected: s == selected,
+      favorite: favorites.contains(s),
       onTap: () => onSelect(s),
+      onFavorite: () => toggleFavorite(s),
     );
-    Widget group(String title, {required bool prestige}) => Column(
+
+    Widget group(
+      String title,
+      Iterable<ShareCardStyle> styles, {
+      IconData? icon,
+      bool accent = false,
+    }) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 30, bottom: 4),
           child: Row(
             children: [
-              if (prestige) ...[
-                Icon(Icons.auto_awesome_rounded, size: 13, color: c.dahong),
+              if (icon != null) ...[
+                Icon(icon, size: 13, color: c.dahong),
                 const SizedBox(width: 3),
               ],
               Text(
                 title,
                 style: context.text.bodySmall?.copyWith(
-                  color: prestige ? c.dahong : c.galmukSub,
+                  color: accent ? c.dahong : c.galmukSub,
                 ),
               ),
             ],
@@ -307,22 +375,35 @@ class _StylePicker extends StatelessWidget {
         ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              for (final s in ShareCardStyle.values)
-                if (s.prestige == prestige) tile(s),
-            ],
-          ),
+          // 위쪽 여백은 타일 모서리에 걸친 하트 자리.
+          padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
+          child: Row(children: [for (final s in styles) tile(s)]),
         ),
       ],
     );
 
     return Column(
       children: [
-        group(S.shareCardBasic, prestige: false),
-        const SizedBox(height: 8),
-        group(S.shareCardPrestige, prestige: true),
+        if (favorites.isNotEmpty) ...[
+          group(
+            S.shareCardFavorites,
+            favorites,
+            icon: Icons.favorite_rounded,
+            accent: true,
+          ),
+          const SizedBox(height: 6),
+        ],
+        group(
+          S.shareCardBasic,
+          ShareCardStyle.values.where((s) => !s.prestige),
+        ),
+        const SizedBox(height: 6),
+        group(
+          S.shareCardPrestige,
+          ShareCardStyle.values.where((s) => s.prestige),
+          icon: Icons.auto_awesome_rounded,
+          accent: true,
+        ),
       ],
     );
   }
@@ -333,13 +414,17 @@ class _StyleTile extends StatelessWidget {
     required this.quote,
     required this.style,
     required this.selected,
+    required this.favorite,
     required this.onTap,
+    required this.onFavorite,
   });
 
   final Quote quote;
   final ShareCardStyle style;
   final bool selected;
+  final bool favorite;
   final VoidCallback onTap;
+  final VoidCallback onFavorite;
 
   @override
   Widget build(BuildContext context) {
@@ -349,28 +434,71 @@ class _StyleTile extends StatelessWidget {
       selected: selected,
       label: style.label,
       excludeSemantics: true,
+      customSemanticsActions: {
+        CustomSemanticsAction(
+          label: favorite ? S.favoriteRemove : S.favoriteAdd,
+        ): onFavorite,
+      },
       child: GestureDetector(
         onTap: onTap,
+        onLongPress: onFavorite,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5),
           child: Column(
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 56,
-                height: 70,
-                padding: EdgeInsets.all(selected ? 2 : 1),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: selected ? c.galmuk : c.line,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(selected ? 10 : 11),
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: ShareCard(quote: quote, style: style),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 56,
+                    height: 70,
+                    padding: EdgeInsets.all(selected ? 2 : 1),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: selected ? c.galmuk : c.line,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(selected ? 10 : 11),
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: ShareCard(
+                          quote: quote,
+                          style: style,
+                          thumbnail: true,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  // 하트. 누르기 쉽도록 보이는 원보다 넓게 받는다.
+                  Positioned(
+                    top: -10,
+                    right: -10,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onFavorite,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: c.paper,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: c.line),
+                          ),
+                          child: Icon(
+                            favorite
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            size: 13,
+                            color: favorite ? c.dahong : c.yeongal,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(

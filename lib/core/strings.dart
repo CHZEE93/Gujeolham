@@ -16,6 +16,14 @@ abstract final class S {
   static const fabCapture = '담기';
   static const settings = '설정';
 
+  // 읽고 있는 책
+  static String readingNow(String title) => '『$title』 읽는 중';
+  static const readingNone = '읽고 있는 책 정하기';
+  static const readingTitle = '읽고 있는 책';
+  static const readingDesc = '새 구절을 담을 때 이 책이 미리 채워집니다. 제목을 비우고 정하면 읽고 있는 책이 비워집니다';
+  static const readingSet = '정하기';
+  static const readingClear = '비우기';
+
   // 촬영
   static const captureTitle = '촬영';
   static const captureGuide = '마음에 닿은 문장이 있는 쪽을\n찍어 주세요';
@@ -25,6 +33,7 @@ abstract final class S {
   static const ocrFailed = '글자를 읽지 못했습니다. 다시 시도해 주세요.';
   static const ocrEmpty = '사진에서 글자를 찾지 못했습니다';
   static const imagePickFailed = '사진을 가져오지 못했습니다';
+  static const writeByHand = '사진 없이 직접 쓰기';
 
   // 부분 지정
   static const regionTitle = '부분 지정';
@@ -46,6 +55,7 @@ abstract final class S {
 
   // 담기
   static const saveTitle = '담기';
+  static const writeGuide = '책에서 만난 구절을 적어 주세요';
   static const contentLabel = '구절';
   static const bookTitleLabel = '책 제목 (선택)';
   static const authorLabel = '저자 (선택)';
@@ -84,6 +94,11 @@ abstract final class S {
   static const shareModeText = '글';
   static const shareCardBasic = '기본';
   static const shareCardPrestige = '프레스티지';
+  static const shareCardFavorites = '찜한 편지지';
+  static const favoriteAdd = '찜하기';
+  static const favoriteRemove = '찜 풀기';
+  static String favoriteAdded(String name) => '$name 편지지를 찜했습니다';
+  static String favoriteRemoved(String name) => '$name 편지지 찜을 풀었습니다';
   static const shareSendCard = '이 카드 보내기';
   static const shareSendText = '이 글 보내기';
   static const shareFailed = '보내지 못했습니다';

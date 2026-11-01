@@ -14,6 +14,7 @@ import '../../core/widgets/puffy.dart';
 import '../../core/widgets/seal.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import 'reading_book.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -59,6 +60,10 @@ class HomeScreen extends ConsumerWidget {
                         : S.quoteCount(count),
                     style: context.text.bodySmall,
                   ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 6, 24, 0),
+            child: ReadingBookChip(),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
@@ -255,11 +260,7 @@ class QuoteCard extends StatelessWidget {
           top: -8,
           right: 16,
           child: quote.cherishedAt != null
-              ? Seal(
-                  text: S.sealCherished,
-                  size: 30,
-                  angle: 5 * math.pi / 180,
-                )
+              ? Seal(text: S.sealCherished, size: 30, angle: 5 * math.pi / 180)
               : Seal.forIndex(context, index, size: 30),
         ),
       ],

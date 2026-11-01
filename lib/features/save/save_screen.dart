@@ -8,12 +8,17 @@ import '../../core/theme.dart';
 import '../../core/widgets/hanji_page.dart';
 import '../../core/widgets/puffy.dart';
 import '../../core/widgets/seal.dart';
+import '../../data/app_settings.dart';
 import '../../data/providers.dart';
 import '../capture/capture_session.dart';
 import 'quote_form.dart';
 
+/// 구절 담기. 촬영에서 고른 문장으로 시작하거나, [manual]이면 빈 칸에서 직접 쓴다.
+/// 읽고 있는 책이 정해져 있으면 책 제목과 저자를 미리 채운다.
 class SaveScreen extends ConsumerStatefulWidget {
-  const SaveScreen({super.key});
+  const SaveScreen({super.key, this.manual = false});
+
+  final bool manual;
 
   @override
   ConsumerState<SaveScreen> createState() => _SaveScreenState();
@@ -22,7 +27,11 @@ class SaveScreen extends ConsumerStatefulWidget {
 class _SaveScreenState extends ConsumerState<SaveScreen> {
   final _formKey = GlobalKey<FormState>();
   late final QuoteFormControllers _c = QuoteFormControllers(
-    content: ref.read(captureSessionProvider).joinedSelection,
+    content: widget.manual
+        ? ''
+        : ref.read(captureSessionProvider).joinedSelection,
+    bookTitle: ref.read(readingBookProvider)?.title,
+    author: ref.read(readingBookProvider)?.author,
   );
   bool _saving = false;
   bool _celebrating = false;
@@ -42,15 +51,16 @@ class _SaveScreenState extends ConsumerState<SaveScreen> {
           .read(quoteRepositoryProvider)
           .create(
             _c.toInput(),
-            sourceImagePath: ref.read(captureSessionProvider).imagePath,
+            sourceImagePath: widget.manual
+                ? null
+                : ref.read(captureSessionProvider).imagePath,
           );
       if (mounted) setState(() => _celebrating = true);
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text(S.unknownError)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text(S.unknownError)));
     }
   }
 
@@ -82,12 +92,12 @@ class _SaveScreenState extends ConsumerState<SaveScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    S.saveEditGuide,
+                    widget.manual ? S.writeGuide : S.saveEditGuide,
                     textAlign: TextAlign.center,
                     style: context.text.bodySmall,
                   ),
                 ),
-                QuoteFormFields(controllers: _c),
+                QuoteFormFields(controllers: _c, autofocus: widget.manual),
               ],
             ),
           ),
